@@ -1,0 +1,59 @@
+---
+- name: Setup Apache Web Server on EC2
+  hosts: ec2
+  become: true
+
+  tasks:
+
+    - name: Update all system packages
+      yum:
+        name: "*"
+        state: latest
+
+    - name: Stop Nginx if running
+      systemd:
+        name: nginx
+        state: stopped
+        enabled: no
+      ignore_errors: yes
+
+    - name: Remove Nginx if installed
+      yum:
+        name: nginx
+        state: absent
+
+    - name: Install Apache Httpd
+      yum:
+        name: httpd
+        state: present
+
+    - name: Start and enable Httpd
+      service:
+        name: httpd
+        state: started
+        enabled: true
+
+    - name: Restart Httpd
+      service:
+        name: httpd
+        state: restarted
+
+    - name: Get IMDSv2 token
+      uri:
+        url: http://169.254.169.254/latest/api/token
+        method: PUT
+        headers:
+          X-aws-ec2-metadata-token-ttl-seconds: "21600"
+      register: imds_token
+
+    - name: Get public IPv4 using IMDSv2
+      uri:
+        url: http://169.254.169.254/latest/meta-data/public-ipv4
+        headers:
+          X-aws-ec2-metadata-token: "{{ imds_token.content }}"
+      register: public_ipv4
+
+    - name: Show public IP
+      debug:
+        msg: "Public IP of this instance is {{ public_ipv4.content }}"
+
