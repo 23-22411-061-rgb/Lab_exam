@@ -1,5 +1,5 @@
 [ec2]
-44.222.79.27
+3.238.32.182
 
 [ec2:vars]
 ansible_user = ec2-user
